@@ -14,11 +14,11 @@ function Set-StartLayout {
     $FileExist = Test-Path $layout
 
     if ($FileExist) {
+        echo "Importing start layout`n"
         Import-StartLayout -LayoutPath $layout -MountPath "C:\"
     }
     else {
         [string]$ExportCurrentLayout = Read-Host "Layout file 'layout.xml' not found. Would you like to use the current layout? [Y/N]"
-
         if ($ExportCurrentLayout.ToLower() -eq "y") {
             Export-StartLayout -Path $layout
             Set-StartLayout
@@ -35,14 +35,13 @@ function Set-AppAssociations {
 
     if ($FileExist) {
         dism /online /Import-DefaultAppAssociations:"$AssociationsFile" | Out-Null
-        echo "`nSuccessfully imported App Associations"
+        echo "Importing App Associations`n"
     }
     else {
         [string]$ExportCurrentLayout = Read-Host "Layout file 'MyDefaultAppAssociations.xml' not found. Would you like to use the current layout? [Y/N]"
-
         if ($ExportCurrentLayout.ToLower() -eq "y") {
             dism /online /Export-DefaultAppAssociations:"$AssociationsFile" | Out-Null
-            echo "`nSuccessfully exported App Associations`n"
+            echo "Successfully exported App Associations`n"
             Set-AppAssociations
         }
     }
@@ -52,6 +51,9 @@ function Set-AppAssociations {
 function Create-Users {
     $AccountName = "Staybright Employee"
     $AdminAccount = "SBE Admin"
+
+    echo "Creating users`n"
+
     New-LocalUser -Name $AccountName  -NoPassword # Create user with no password
     & NET LOCALGROUP Administrators $AccountName /add # Make user admin
 
@@ -63,7 +65,7 @@ function Create-Users {
 function Remove-SetupAccount {
   $CurrentUser = $env:UserName
   Remove-LocalUser -Name $CurrentUser
-  echo "Removed current user. Current user will disappear after reboot"
+  echo "Removed current user. Current user will disappear after reboot`n"
 }
 
 # Run Ninite exe
@@ -72,11 +74,11 @@ function Run-Ninite {
   $FileExist = Test-Path $path
 
   if ($FileExist) {
-    echo "Running Ninite"
+    echo "Running Ninite`n"
     & $path
   }
   else {
-    echo "Ninite not found. Please download and run manually"
+    echo "Ninite not found. Please download and run manually`n"
   }
 }
 
@@ -86,6 +88,7 @@ function Disable-Cortana {
   if (!Test-Path -Path $path) {
     New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows" -Name "Windows Search"
   }
+  echo "Disabling Cortana`n"
   Set-ItemProperty -Path $path -Name "AllowCortana" -Value 0
   Stop-Process -name explorer
 }
@@ -94,10 +97,11 @@ function Disable-Cortana {
 function Install-Adobe {
   $path = "\AdbeRdr11010_en_US.exe"
   if (Test-Path -Path $path) {
+    echo "Installing Adobe Reader`n"
     & $path /msi EULA_ACCEPT=YES /qn
   }
   else {
-    echo "Adobe installer not found, please download manually"
+    echo "Adobe installer not found, please download manually`n"
   }
 }
 
