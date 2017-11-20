@@ -51,13 +51,14 @@ function Set-AppAssociations {
 function Create-Users {
     $AccountName = "Staybright Employee"
     $AdminAccount = "SBE Admin"
+    $secureString = convertto-securestring "" -asplaintext -force
 
     echo "Creating users`n"
 
     New-LocalUser -Name $AccountName  -NoPassword # Create user with no password
     & NET LOCALGROUP Administrators $AccountName /add # Make user admin
 
-    New-LocalUser -Name $AdminAccount -Password "T3chn0Log!c"
+    New-LocalUser -Name $AdminAccount -Password $secureString
     & NET LOCALGROUP Administrators $AdminAccount /add # Make user admin
 }
 
@@ -75,7 +76,7 @@ function Run-Ninite {
 
   if ($FileExist) {
     echo "Running Ninite`n"
-    & $path
+    & $path | Out-Null
   }
   else {
     echo "Ninite not found. Please download and run manually`n"
@@ -85,7 +86,7 @@ function Run-Ninite {
 # Disables Cortana for all users and restarts explorer
 function Disable-Cortana {
   $path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
-  if (!Test-Path -Path $path) {
+  if (-Not Test-Path -Path $path) {
     New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows" -Name "Windows Search"
   }
   echo "Disabling Cortana`n"
@@ -98,7 +99,7 @@ function Install-Adobe {
   $path = "\AdbeRdr11010_en_US.exe"
   if (Test-Path -Path $path) {
     echo "Installing Adobe Reader`n"
-    & $path /msi EULA_ACCEPT=YES /qn
+    & $path /msi EULA_ACCEPT=YES /qn | Out-Null
   }
   else {
     echo "Adobe installer not found, please download manually`n"
