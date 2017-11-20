@@ -51,7 +51,7 @@ function Set-AppAssociations {
 function Create-Users {
     $AccountName = "Staybright Employee"
     $AdminAccount = "SBE Admin"
-    $secureString = convertto-securestring "" -asplaintext -force
+    $secureString = convertto-securestring "T3chn0Log!c" -asplaintext -force
 
     echo "Creating users`n"
 
@@ -86,7 +86,7 @@ function Run-Ninite {
 # Disables Cortana for all users and restarts explorer
 function Disable-Cortana {
   $path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
-  if (-Not Test-Path -Path $path) {
+  if (Test-Path -Path $path -eq $False) {
     New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows" -Name "Windows Search"
   }
   echo "Disabling Cortana`n"
