@@ -4,28 +4,29 @@
 # @Author: Cody Bromwich
 # Date: 11/13/2017
 
-# TODO: Registry values for local group policy
-#       Command to run ninite exe
+# TODO: Registry values for local group policy (?)
 #       Auto-create shortcuts for netsuite and outlook
+#       Taskbar: Pin Chrome, unpin everything else
 
 # Start layout settings. Uses a predefined (in this case) bin file to set start layout for all users created after this script is run
 function Set-StartLayout {
-    $layout = $PSScriptRoot + "\layout.bin"
+    $layout = $PSScriptRoot + "\layout.xml" # Sets the layout master file to current directory\layout.bin. If this file does not exist, it is created in this function
     $FileExist = Test-Path $layout
 
     if ($FileExist) {
         Import-StartLayout -LayoutPath $layout -MountPath "C:\"
     }
     else {
-        [string]$ExportCurrentLayout = Read-Host "Layout file 'layout.bin' not found. Would you like to use the current layout? [Y/N]"
+        [string]$ExportCurrentLayout = Read-Host "Layout file 'layout.xml' not found. Would you like to use the current layout? [Y/N]"
 
         if ($ExportCurrentLayout.ToLower() -eq "y") {
             Export-StartLayout -Path $layout
             Set-StartLayout
         }
-        
     }
 }
+
+
 
 # Set default app associations from a predefined (in this case) xml file
 function Set-AppAssociations {
@@ -44,22 +45,74 @@ function Set-AppAssociations {
             echo "`nSuccessfully exported App Associations`n"
             Set-AppAssociations
         }
-        
     }
 }
 
-# Creates local user 
-function Create-SBEUser {
+# Creates local users - SBE Admin and Staybright Employee
+function Create-Users {
     $AccountName = "Staybright Employee"
+    $AdminAccount = "SBE Admin"
     New-LocalUser -Name $AccountName  -NoPassword # Create user with no password
     & NET LOCALGROUP Administrators $AccountName /add # Make user admin
+
+    New-LocalUser -Name $AdminAccount -Password "T3chn0Log!c"
+    & NET LOCALGROUP Administrators $AdminAccount /add # Make user admin
+}
+
+# Removes the account used to run this script. Most of the functions here will only work on accounts created after they are ran. Account will be gone after reboot
+function Remove-SetupAccount {
+  $CurrentUser = $env:UserName
+  Remove-LocalUser -Name $CurrentUser
+  echo "Removed current user. Current user will disappear after reboot"
+}
+
+# Run Ninite exe
+function Run-Ninite {
+  $path = $PSScriptRoot + "\ninite.exe"
+  $FileExist = Test-Path $path
+
+  if ($FileExist) {
+    echo "Running Ninite"
+    & $path
+  }
+  else {
+    echo "Ninite not found. Please download and run manually"
+  }
+}
+
+# Disables Cortana for all users and restarts explorer
+function Disable-Cortana {
+  $path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
+  if (!Test-Path -Path $path) {
+    New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows" -Name "Windows Search"
+  }
+  Set-ItemProperty -Path $path -Name "AllowCortana" -Value 0
+  Stop-Process -name explorer
+}
+
+# Installs Adobe Reader using offline installer
+function Install-Adobe {
+  $path = "\AdbeRdr11010_en_US.exe"
+  if (Test-Path -Path $path) {
+    & $path /msi EULA_ACCEPT=YES /qn
+  }
+  else {
+    echo "Adobe installer not found, please download manually"
+  }
 }
 
 # Run script as administrator
-if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) { 
-    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit 
+if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Start-Process powershell.exe "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs; exit
 }
 
+Run-Ninite
 Set-StartLayout
 Set-AppAssociations
-cmd /c pause | Out-Null # Close output window on any key press
+Disable-Cortana
+Install-Adobe
+Create-Users
+Remove-SetupAccount
+
+
+cmd /c pause | Out-Null # Keep output window open until key is pressed
